@@ -38,7 +38,7 @@
 /* USER CODE BEGIN PD */
 #define NUCLEO_F411RE
 #define SENSOR_BUS hi2c1
-#define DATA_POINTS 4096*2*2*2
+#define DATA_POINTS 4096
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -145,7 +145,7 @@ int main(void)
   lis2dh12_block_data_update_set(&dev_ctx, PROPERTY_ENABLE);
 
   /* Set Output Data Rate to 1Hz. */
-  lis2dh12_data_rate_set(&dev_ctx, LIS2DH12_ODR_5kHz376_LP_1kHz344_NM_HP);
+  lis2dh12_data_rate_set(&dev_ctx, LIS2DH12_ODR_1kHz620_LP);
 
   /* Set full scale to 2g. */
   lis2dh12_full_scale_set(&dev_ctx, LIS2DH12_4g);
@@ -154,7 +154,7 @@ int main(void)
   lis2dh12_temperature_meas_set(&dev_ctx, LIS2DH12_TEMP_DISABLE);
 
   /* Set device in continuous mode with 12 bit resol. */
-  lis2dh12_operating_mode_set(&dev_ctx, LIS2DH12_NM_10bit);
+  lis2dh12_operating_mode_set(&dev_ctx, LIS2DH12_HR_12bit);
 
   uart_buf_len = sprintf(uart_buf, "Timer test\n\r");
   HAL_UART_Transmit(&huart2, (uint8_t*)uart_buf, uart_buf_len, HAL_MAX_DELAY);
@@ -184,10 +184,12 @@ int main(void)
 		  uint16_t hertz = DATA_POINTS * 1000 / timer_val;
 
 	  for(uint16_t i = 0; i < DATA_POINTS; ++i){ //print acceleration values of the z axis
-		  sprintf((char*)tx_buffer, "%d\t az [mg]: %d\r\n",i , accel[i]);
+		  //sprintf((char*)tx_buffer, "%d\t az [mg]: %d\r\n",i , accel[i]);
+		  sprintf((char*)tx_buffer, "accelx100 == 0:0:%d \r\n", accel[i]);
 		  tx_com(tx_buffer, strlen((char const*)tx_buffer));
 	  }
-	  uart_buf_len = sprintf(uart_buf, "duration: %u ms Hertz: %u\r\n", timer_val, hertz);
+	  uart_buf_len = sprintf(uart_buf, "duration: %u ms Hertz: %u\r\nthis is the end\r\n", timer_val, hertz);
+	  //uart_buf_len = sprintf(uart_buf, "this is the end\r\n", timer_val, hertz);
 	  HAL_UART_Transmit(&huart2, (uint8_t*)uart_buf, uart_buf_len, HAL_MAX_DELAY); // print timer_val
 	  }
 	  else if(opt == 2){
@@ -423,7 +425,7 @@ int lis2dh12_read_data_polling(void)
       //acceleration_mg[1] =
     		  //lis2dh12_from_fs16_lp_to_mg(data_raw_acceleration[1]);
       acceleration_mg[2] =
-    		  lis2dh12_from_fs4_lp_to_mg(data_raw_acceleration[2]);
+    		  lis2dh12_from_fs4_hr_to_mg(data_raw_acceleration[2]);
 
       //sprintf((char*)tx_buffer, "Acceleration [mg]: %4.2f\t%4.2f\t%4.2f\r\n",
               //acceleration_mg[0], acceleration_mg[1], acceleration_mg[2]);
