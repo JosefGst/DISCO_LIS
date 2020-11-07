@@ -59,7 +59,8 @@ void Error_Handler(void);
 
 /* Private defines -----------------------------------------------------------*/
 /* USER CODE BEGIN Private defines */
-
+#define DATA_POINTS 4096
+//#define TESTING
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
