@@ -143,9 +143,9 @@ int main(void)
   lis2dh12_block_data_update_set(&dev_ctx, PROPERTY_ENABLE);
 
   lis2dh12_data_rate_set(&dev_ctx, LIS2DH12_ODR_1kHz620_LP);
-  lis2dh12_full_scale_set(&dev_ctx, LIS2DH12_4g);
+  lis2dh12_full_scale_set(&dev_ctx, LIS2DH12_2g);
   lis2dh12_temperature_meas_set(&dev_ctx, LIS2DH12_TEMP_DISABLE);
-  lis2dh12_operating_mode_set(&dev_ctx, LIS2DH12_HR_12bit);
+  lis2dh12_operating_mode_set(&dev_ctx, LIS2DH12_LP_8bit);
   // Start timer
   HAL_TIM_Base_Start(&htim16);
 #if defined TESTING
@@ -211,10 +211,12 @@ int main(void)
 
 	  	  for(uint16_t i = 0; i < DATA_POINTS; ++i){ //print acceleration values of the z axis
 	  		  //sprintf((char*)tx_buffer, "%d\t az [mg]: %d\r\n",i , accel[i]);
-	  		  sprintf((char*)tx_buffer, "accelx100 == 0:0:%d \r\n", accel[i]);
+	  		  sprintf((char*)tx_buffer, "%d \r\n", accel[i]);
 	  		  tx_com(tx_buffer, strlen((char const*)tx_buffer));
 	  	  }
-	  	  uart_buf_len = sprintf(uart_buf, "this is the end\r\nduration: %u ms Hertz: %u\r\n", timer_val, hertz);
+	  	  // print last message
+	  	  uart_buf_len = sprintf(uart_buf, "%u \r\n%u \r\nthis is the end \r\n", timer_val, hertz);
+	  	  //uart_buf_len = sprintf(uart_buf, "duration: %u ms Hertz: %u\r\n", timer_val, hertz);
 	  	  //uart_buf_len = sprintf(uart_buf, "this is the end\r\n", timer_val, hertz);
 	  	  HAL_UART_Transmit(&huart2, (uint8_t*)uart_buf, uart_buf_len, HAL_MAX_DELAY); // print timer_val
 	  	  break;
@@ -239,7 +241,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
   RCC_OscInitStruct.MSICalibrationValue = 0;
-  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_7;
+  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -289,7 +291,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.Timing = 0x00000001;
+  hi2c1.Init.Timing = 0x00000000;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -338,7 +340,7 @@ static void MX_TIM16_Init(void)
 
   /* USER CODE END TIM16_Init 1 */
   htim16.Instance = TIM16;
-  htim16.Init.Prescaler = 8000-1;
+  htim16.Init.Prescaler = 4000-1;
   htim16.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim16.Init.Period = 65535;
   htim16.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -370,7 +372,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 128000;
+  huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
