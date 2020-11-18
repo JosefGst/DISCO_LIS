@@ -55,9 +55,7 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 static int16_t data_raw_acceleration[3];
-static int16_t data_raw_temperature;
 static float acceleration_mg[3];
-static float temperature_degC;
 static uint8_t whoamI;
 static uint8_t tx_buffer[1000];
 /* USER CODE END PV */
@@ -145,7 +143,7 @@ int main(void)
   lis2dh12_data_rate_set(&dev_ctx, LIS2DH12_ODR_1kHz620_LP);
   lis2dh12_full_scale_set(&dev_ctx, LIS2DH12_2g);
   lis2dh12_temperature_meas_set(&dev_ctx, LIS2DH12_TEMP_DISABLE);
-  lis2dh12_operating_mode_set(&dev_ctx, LIS2DH12_LP_8bit);
+  lis2dh12_operating_mode_set(&dev_ctx, LIS2DH12_HR_12bit);
   // Start timer
   HAL_TIM_Base_Start(&htim16);
 #if defined TESTING
@@ -436,7 +434,7 @@ int lis2dh12_read_data_polling(void)
       //acceleration_mg[1] =
     		  //lis2dh12_from_fs16_lp_to_mg(data_raw_acceleration[1]);
       acceleration_mg[2] =
-    		  lis2dh12_from_fs4_hr_to_mg(data_raw_acceleration[2]);
+    		  lis2dh12_from_fs2_lp_to_mg(data_raw_acceleration[2]);
 
       //sprintf((char*)tx_buffer, "Acceleration [mg]: %4.2f\t%4.2f\t%4.2f\r\n",
               //acceleration_mg[0], acceleration_mg[1], acceleration_mg[2]);

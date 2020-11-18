@@ -59,8 +59,10 @@ void Error_Handler(void);
 
 /* Private defines -----------------------------------------------------------*/
 /* USER CODE BEGIN Private defines */
+//Define the Board	DISCO or NUCLEO
+#define NUCLEO
 #define DATA_POINTS 4096
-//#define TESTING
+//#define TESTING //has the serial port menu included
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
