@@ -58,6 +58,7 @@ static int16_t data_raw_acceleration[3];
 static float acceleration_mg[3];
 static uint8_t whoamI;
 static uint8_t tx_buffer[1000];
+static int16_t accel[DATA_POINTS];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -88,11 +89,9 @@ uint8_t readUserInput(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	char uart_buf[50];
-	int uart_buf_len;
-	uint16_t timer_val;
+
 	uint8_t opt = 0;
-	int16_t accel[DATA_POINTS];
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -140,7 +139,7 @@ int main(void)
   /* Enable Block Data Update. */
   lis2dh12_block_data_update_set(&dev_ctx, PROPERTY_ENABLE);
 
-  lis2dh12_data_rate_set(&dev_ctx, LIS2DH12_ODR_1kHz620_LP);
+  lis2dh12_data_rate_set(&dev_ctx, LIS2DH12_ODR_200Hz);
   lis2dh12_full_scale_set(&dev_ctx, LIS2DH12_2g);
   lis2dh12_temperature_meas_set(&dev_ctx, LIS2DH12_TEMP_DISABLE);
   lis2dh12_operating_mode_set(&dev_ctx, LIS2DH12_HR_12bit);
@@ -160,65 +159,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-#if defined TESTING
-	  opt = readUserInput();
-	  if(opt == 1){ //make measurements and print all
-		  timer_val = __HAL_TIM_GET_COUNTER(&htim16);
 
-		  for(uint16_t i = 0; i < DATA_POINTS; ++i){
-			  accel[i] = lis2dh12_read_data_polling();
-		  }
-		  timer_val = __HAL_TIM_GET_COUNTER(&htim16) - timer_val - 1;//somehow its always 1ms too slow
-		  uint16_t hertz = DATA_POINTS * 1000 / timer_val;
-
-	  for(uint16_t i = 0; i < DATA_POINTS; ++i){ //print acceleration values of the z axis
-		  //sprintf((char*)tx_buffer, "%d\t az [mg]: %d\r\n",i , accel[i]);
-		  sprintf((char*)tx_buffer, "accelx100 == 0:0:%d \r\n", accel[i]);
-		  tx_com(tx_buffer, strlen((char const*)tx_buffer));
-	  }
-	  uart_buf_len = sprintf(uart_buf, "duration: %u ms Hertz: %u\r\nthis is the end\r\n", timer_val, hertz);
-	  //uart_buf_len = sprintf(uart_buf, "this is the end\r\n", timer_val, hertz);
-	  HAL_UART_Transmit(&huart2, (uint8_t*)uart_buf, uart_buf_len, HAL_MAX_DELAY); // print timer_val
-	  }
-	  else if(opt == 2){
-		  timer_val = __HAL_TIM_GET_COUNTER(&htim16);
-
-		  		  for(uint16_t i = 0; i < DATA_POINTS; ++i){
-		  			  accel[i] = lis2dh12_read_data_polling();
-		  		  }
-		  		  timer_val = __HAL_TIM_GET_COUNTER(&htim16) - timer_val - 1;//somehow its always 1ms too slow
-		  		  uint16_t hertz = DATA_POINTS * 1000 / timer_val;
-		  		  uart_buf_len = sprintf(uart_buf, "duration: %u ms Hertz: %u", timer_val, hertz);
-		  		  HAL_UART_Transmit(&huart2, (uint8_t*)uart_buf, uart_buf_len, HAL_MAX_DELAY); // print timer_val
-	  }
-	  else{
-		  timer_val = __HAL_TIM_GET_COUNTER(&htim16);
-		  HAL_Delay(500);
-		  timer_val = __HAL_TIM_GET_COUNTER(&htim16) - timer_val - 1;//somehow its always 1ms too slow
-		  uart_buf_len = sprintf(uart_buf, "duration: %u ms", timer_val);
-		  HAL_UART_Transmit(&huart2, (uint8_t*)uart_buf, uart_buf_len, HAL_MAX_DELAY); // print timer_val
-	  }
-#else
-	  timer_val = __HAL_TIM_GET_COUNTER(&htim16);
-
-	  		  for(uint16_t i = 0; i < DATA_POINTS; ++i){
-	  			  accel[i] = lis2dh12_read_data_polling();
-	  		  }
-	  		  timer_val = __HAL_TIM_GET_COUNTER(&htim16) - timer_val - 1;//somehow its always 1ms too slow
-	  		  uint16_t hertz = DATA_POINTS * 1000 / timer_val;
-
-	  	  for(uint16_t i = 0; i < DATA_POINTS; ++i){ //print acceleration values of the z axis
-	  		  //sprintf((char*)tx_buffer, "%d\t az [mg]: %d\r\n",i , accel[i]);
-	  		  sprintf((char*)tx_buffer, "%d \r\n", accel[i]);
-	  		  tx_com(tx_buffer, strlen((char const*)tx_buffer));
-	  	  }
-	  	  // print last message
-	  	  uart_buf_len = sprintf(uart_buf, "%u \r\n%u \r\nthis is the end \r\n", timer_val, hertz);
-	  	  //uart_buf_len = sprintf(uart_buf, "duration: %u ms Hertz: %u\r\n", timer_val, hertz);
-	  	  //uart_buf_len = sprintf(uart_buf, "this is the end\r\n", timer_val, hertz);
-	  	  HAL_UART_Transmit(&huart2, (uint8_t*)uart_buf, uart_buf_len, HAL_MAX_DELAY); // print timer_val
-	  	  break;
-#endif
+	lis2dh12_read_data_polling();
+	break;
   }
   /* USER CODE END 3 */
 }
@@ -414,6 +357,9 @@ uint8_t readUserInput(void) {
 
 int lis2dh12_read_data_polling(void)
 {
+	uint16_t i = 0, timer_val;
+	char uart_buf[50];
+	int uart_buf_len;
 	stmdev_ctx_t dev_ctx;
 
 	dev_ctx.write_reg = platform_write;
@@ -421,41 +367,44 @@ int lis2dh12_read_data_polling(void)
 	dev_ctx.handle = &SENSOR_BUS;
   /* Read samples in polling mode (no int) */
 
-    lis2dh12_reg_t reg;
+	timer_val = __HAL_TIM_GET_COUNTER(&htim16);
+	while(i < DATA_POINTS){
+		lis2dh12_reg_t reg;
 
-    /* Read output only if new value available */
-    lis2dh12_xl_data_ready_get(&dev_ctx, &reg.byte);
-    if (reg.byte) {
-      /* Read accelerometer data */
-      memset(data_raw_acceleration, 0x00, 3*sizeof(int16_t));
-      lis2dh12_acceleration_raw_get(&dev_ctx, data_raw_acceleration);
-      //acceleration_mg[0] =
-    		  //lis2dh12_from_fs16_lp_to_mg(data_raw_acceleration[0]);
-      //acceleration_mg[1] =
-    		  //lis2dh12_from_fs16_lp_to_mg(data_raw_acceleration[1]);
-      acceleration_mg[2] =
-    		  lis2dh12_from_fs2_lp_to_mg(data_raw_acceleration[2]);
+		/* Read output only if new value available */
+		lis2dh12_xl_data_ready_get(&dev_ctx, &reg.byte);
+		if (reg.byte) {
+			  /* Read accelerometer data */
+			  memset(data_raw_acceleration, 0x00, 3*sizeof(int16_t));
+			  lis2dh12_acceleration_raw_get(&dev_ctx, data_raw_acceleration);
+			  //acceleration_mg[0] =
+					  //lis2dh12_from_fs16_lp_to_mg(data_raw_acceleration[0]);
+			  //acceleration_mg[1] =
+					  //lis2dh12_from_fs16_lp_to_mg(data_raw_acceleration[1]);
+			  accel[i] = lis2dh12_from_fs2_lp_to_mg(data_raw_acceleration[2]);
+			  ++i;
+			  //sprintf((char*)tx_buffer, "Acceleration [mg]: %4.2f\t%4.2f\t%4.2f\r\n",
+					  //acceleration_mg[0], acceleration_mg[1], acceleration_mg[2]);
+			  //tx_com(tx_buffer, strlen((char const*)tx_buffer));
+			  //HAL_UART_Transmit(&huart2, tx_buffer, strlen(tx_buffer), HAL_MAX_DELAY);
 
-      //sprintf((char*)tx_buffer, "Acceleration [mg]: %4.2f\t%4.2f\t%4.2f\r\n",
-              //acceleration_mg[0], acceleration_mg[1], acceleration_mg[2]);
-      //tx_com(tx_buffer, strlen((char const*)tx_buffer));
-	  //HAL_UART_Transmit(&huart2, tx_buffer, strlen(tx_buffer), HAL_MAX_DELAY);
+
+		}
     }
-// comment out Temperature read
-//    lis2dh12_temp_data_ready_get(&dev_ctx, &reg.byte);
-//    if (reg.byte) {
-//      /* Read temperature data */
-//      memset(&data_raw_temperature, 0x00, sizeof(int16_t));
-//      lis2dh12_temperature_raw_get(&dev_ctx, &data_raw_temperature);
-//      temperature_degC =
-//        lis2dh12_from_lsb_hr_to_celsius(data_raw_temperature);
-//
-//      sprintf((char*)tx_buffer,
-//              "Temperature [degC]:%6.2f\r\n",
-//              temperature_degC);
-//      tx_com(tx_buffer, strlen((char const*)tx_buffer));
-//    }
-    return acceleration_mg[2];
+	//get time and calculate duration & Hertz
+	timer_val = __HAL_TIM_GET_COUNTER(&htim16) - timer_val - 1;//somehow its always 1ms too slow
+	uint16_t hertz = DATA_POINTS * 1000 / timer_val;
+	//print acceleration values of the z axis
+	for(uint16_t i = 0; i < DATA_POINTS; ++i){
+		  //sprintf((char*)tx_buffer, "%d\t az [mg]: %d\r\n",i , accel[i]);
+		  sprintf((char*)tx_buffer, "%d \r\n", accel[i]);
+		  tx_com(tx_buffer, strlen((char const*)tx_buffer));
+	}
+	// print last message
+	uart_buf_len = sprintf(uart_buf, "%u \r\n%u \r\nthis is the end \r\n", timer_val, hertz);
+	//uart_buf_len = sprintf(uart_buf, "duration: %u ms Hertz: %u\r\n", timer_val, hertz);
+	//uart_buf_len = sprintf(uart_buf, "this is the end\r\n", timer_val, hertz);
+	HAL_UART_Transmit(&huart2, (uint8_t*)uart_buf, uart_buf_len, HAL_MAX_DELAY); // print timer_val
 }
 
 static int32_t platform_write(void *handle, uint8_t reg, uint8_t *bufp,
